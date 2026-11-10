@@ -73,6 +73,28 @@ jobs:
           fi
           echo "Temporary debug keystore verified."
 
+      - name: Accept Android SDK licenses and prepare environment
+        run: |
+          mkdir -p "$HOME/.android"
+          touch "$HOME/.android/repositories.cfg"
+          touch .env
+
+          SDKM=""
+          if [ -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+            SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          elif [ -x "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
+            SDKM="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          elif command -v sdkmanager &> /dev/null; then
+            SDKM="sdkmanager"
+          fi
+
+          if [ -n "$SDKM" ]; then
+            echo "Accepting Android SDK licenses via $SDKM..."
+            yes | "$SDKM" --licenses 2>/dev/null || true
+            echo "Ensuring platforms;android-36 and build-tools;36.0.0 are installed..."
+            echo "y" | "$SDKM" "platforms;android-36" "build-tools;36.0.0" 2>/dev/null || true
+          fi
+
       - name: Build the debug APK
         run: |
           gradle :app:assembleDebug --stacktrace --no-daemon
